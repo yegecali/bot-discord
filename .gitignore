@@ -7,6 +7,7 @@ env/
 .env
 .env.local
 .env.*.local
+gastos.db
 
 # Python
 __pycache__/

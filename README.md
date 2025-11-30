@@ -1,37 +1,65 @@
-# Bot Personal de Discord - Gestor de Gastos
+# Bot Personal de Discord 🤖
 
-Un bot de Discord que escanea facturas y registra tus gastos automáticamente usando OCR.
+Gestor de gastos con procesamiento automático de facturas usando OCR (Tesseract).
 
-## 🎯 Características
+## 📋 Características
 
-- ✅ **Escaneo de Facturas** - Envía una imagen y el bot extrae el monto
-- ✅ **Registro Automático de Gastos** - Se guardan en base de datos SQLite
-- ✅ **Comandos de Consulta** - Ver tus gastos totales y por categoría
-- ✅ **Sistema de Categorización** - Organiza gastos por tipo
-- ✅ **Interfaz Web OAuth2** - Autoriza el bot fácilmente
-- ✅ **Comandos Generales** - Ping, info de usuario, lista de canales
+✅ **Procesamiento de Facturas**
+- Extrae automáticamente montos, fechas y vendedor
+- Utiliza OCR (Tesseract) para escanear imágenes
+- Soporta múltiples formatos: PNG, JPG, JPEG, GIF, BMP
 
-## 📋 Requisitos Previos
+✅ **Gestión de Gastos**
+- Registra gastos automáticamente en Soles (S/.)
+- Base de datos SQLite para persistencia
+- Organización por categorías
 
-### Necesario
-- Python 3.8 o superior
-- pip (gestor de paquetes)
-- **Tesseract OCR** instalado (ver [TESSERACT_INSTALL.md](TESSERACT_INSTALL.md))
+✅ **Reportes y Análisis**
+- Ver gastos por rango de fechas
+- Agrupación por categoría
+- Cálculo de promedios
+- Totales y subtotales
 
-### Discord
-- Token del bot
-- Client ID y Client Secret
-- Permisos para leer mensajes y adjuntos
+✅ **OAuth2 Integration**
+- Servidor web Flask para autorización
+- Callback automático de Discord
+- Página de estado
+
+## 📁 Estructura del Proyecto
+
+```
+BotPersonal/
+├── src/
+│   ├── __init__.py
+│   ├── config.py              # Configuración centralizada
+│   ├── bot.py                 # Bot principal de Discord
+│   ├── database.py            # Gestión de base de datos
+│   ├── factura_processor.py   # Procesamiento de facturas con OCR
+│   ├── oauth_handler.py       # Manejo de OAuth2
+│   └── web_server.py          # Servidor Flask
+│
+├── tests/
+│   ├── __init__.py
+│   ├── test_factura_processor.py
+│   ├── test_database.py
+│   └── test_tesseract.py
+│
+├── main.py                    # Punto de entrada
+├── run_tests.py               # Ejecutor de tests
+├── requirements.txt           # Dependencias
+├── .env.example               # Ejemplo de variables de entorno
+└── README.md                  # Este archivo
+```
 
 ## 🚀 Instalación
 
-### 1. Clonar/Descargar el proyecto
+### 1. Clonar o descargar el proyecto
 
 ```bash
 cd C:\Proyectos\BotPersonal
 ```
 
-### 2. Crear entorno virtual (recomendado)
+### 2. Crear entorno virtual
 
 ```bash
 python -m venv .venv
@@ -46,189 +74,188 @@ pip install -r requirements.txt
 
 ### 4. Instalar Tesseract OCR
 
-⚠️ **IMPORTANTE:** Lee [TESSERACT_INSTALL.md](TESSERACT_INSTALL.md) para instalar Tesseract en tu sistema
+**Windows:**
+1. Descargar desde: https://github.com/UB-Mannheim/tesseract/wiki
+2. Ejecutar el instalador
+3. Instalar en: `C:\Program Files\Tesseract-OCR`
 
-### 5. Configurar credenciales
-
-Copia `.env.example` a `.env`:
+**Verificar instalación:**
 ```bash
-copy .env.example .env
+tesseract --version
 ```
 
-Edita `.env` y agrega:
-```
-DISCORD_TOKEN=tu_token_del_bot
+### 5. Configurar variables de entorno
+
+Copiar `.env.example` a `.env` y completar:
+
+```env
+# Discord Bot Token
+DISCORD_TOKEN=tu_token_aqui
+
+# OAuth2
 CLIENT_ID=tu_client_id
 CLIENT_SECRET=tu_client_secret
 REDIRECT_URI=http://localhost:8080/callback
 ```
 
-## 🏃 Ejecutar el Bot
+## 📝 Configuración
 
-### Opción 1: Bot + Servidor Web (RECOMENDADO)
+### Discord Bot Setup
+
+1. Ir a [Discord Developer Portal](https://discord.com/developers/applications)
+2. Crear nueva aplicación
+3. En "Bot" → Add Bot
+4. Copiar el token a `.env` como `DISCORD_TOKEN`
+5. Habilitar intents:
+   - Message Content Intent
+   - Server Members Intent
+
+### Permisos Necesarios
+
+El bot necesita estos permisos (código 8 = Admin):
+- Enviar mensajes
+- Leer historial de mensajes
+- Ver canales
+- Procesar archivos adjuntos
+
+## 🎮 Uso
+
+### Iniciar el Bot
 
 ```bash
 python main.py
 ```
 
-Accede a: `http://localhost:8080`
+El bot iniciará:
+- ✅ Servidor web en `http://localhost:8080`
+- ✅ Bot de Discord escuchando comandos
 
-### Opción 2: Solo el Bot
+### Comandos Disponibles
+
+| Comando | Descripción | Ejemplo |
+|---------|------------|---------|
+| `!gastos [días]` | Ver gastos recientes | `!gastos 30` |
+| `!total [días]` | Total de gastos | `!total` |
+| `!categorias [días]` | Gastos por categoría | `!categorias 7` |
+| `!canales` | Listar canales | `!canales` |
+| `!ping` | Latencia del bot | `!ping` |
+| `!ayuda` | Ver ayuda completa | `!ayuda` |
+
+### Procesar Facturas
+
+1. Enviar imagen de factura en Discord
+2. El bot automáticamente:
+   - Descarga la imagen
+   - Escanea con Tesseract OCR
+   - Extrae información
+   - Registra el gasto
+   - Muestra resumen
+
+## 🧪 Tests
+
+### Ejecutar todos los tests
 
 ```bash
-python bot.py
+python run_tests.py
 ```
 
-## 💰 Cómo Usar - Gestor de Gastos
+### Tests disponibles
 
-### 1️⃣ Enviar una Factura
+- `test_factura_processor.py` - Tests de extracción de información
+- `test_database.py` - Tests de base de datos
+- `test_tesseract.py` - Verificación de Tesseract
 
-Simplemente **envía una foto de la factura** en Discord. El bot:
-- 📸 Descarga la imagen
-- 🔍 Escanea el texto con OCR
-- 💰 Extrae el monto total
-- 💾 Registra en la base de datos
-- ✅ Te muestra un resumen
+## 📊 Base de Datos
 
-**Ejemplo:**
-```
-Tu: [Envías una foto de factura]
-Bot: ✅ Gasto registrado correctamente
-     💰 Monto: $45.99
-     📝 Vendedor: Supermercado XYZ
-     🏷️ Categoría: Alimentación
-```
+SQLite con tabla de gastos:
 
-### 2️⃣ Ver Tus Gastos
-
-```
-!gastos          → Muestra últimos gastos (últimos 30 días)
-!gastos 7        → Últimos 7 días
-!total           → Total gastado
-!total 7         → Total de la última semana
-!categorias      → Gastos por categoría
+```sql
+CREATE TABLE gastos (
+    id INTEGER PRIMARY KEY,
+    usuario_id INTEGER NOT NULL,
+    descripcion TEXT,
+    monto REAL,
+    categoria TEXT,
+    fecha TEXT,
+    imagen_url TEXT,
+    datos_ocr TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+)
 ```
 
-### 3️⃣ Otros Comandos
+## 🛠️ Solución de Problemas
 
-```
-!ping            → Latencia del bot
-!hola            → Te saluda
-!info            → Tu información
-!canales         → Canales del servidor
-!ayuda           → Lista de comandos
+### Error: "No module named 'audioop'"
+
+```bash
+pip install audioop-lts
 ```
 
-## 📊 Ejemplos de Uso
+### Error: "Tesseract is not installed"
 
-### Enviar factura de supermercado
-```
-[Imagen de factura]
-↓
-Bot: ✅ Gasto registrado
-    💰 $125.50 USD
-    📝 Carrefour
-    🛒 Alimentación
-```
+1. Verificar instalación: `tesseract --version`
+2. Verificar ruta en `src/config.py`
+3. Agregar a PATH si es necesario
 
-### Ver total de gastos
-```
-Tu: !total
-Bot: 💰 Total (últimos 30 días): $892.35
-    📊 Número de transacciones: 12
-    📈 Promedio: $74.36
-```
+### Bot no responde
 
-### Ver por categoría
-```
-Tu: !categorias
-Bot: 📊 Gastos por Categoría
-    🍔 Alimentación: $450.00 (6 compras)
-    🚗 Transporte: $200.00 (3 compras)
-    📦 Otros: $242.35 (3 compras)
-    Total: $892.35
-```
+1. Verificar `DISCORD_TOKEN` en `.env`
+2. Verificar permisos del bot en Discord
+3. Revisar logs en consola
 
-## 📁 Estructura del Proyecto
+### OCR no extrae información
 
-```
-BotPersonal/
-├── main.py                  # Punto de entrada (bot + servidor)
-├── bot.py                   # Lógica principal del bot
-├── web_server.py            # Servidor Flask (OAuth2)
-├── oauth_handler.py         # Manejo de OAuth2
-├── database.py              # Gestión de base de datos SQLite
-├── factura_processor.py     # Procesamiento de OCR
-├── requirements.txt         # Dependencias
-├── gastos.db                # Base de datos (se crea automáticamente)
-├── .env.example             # Plantilla de variables
-├── .env                     # Variables de entorno (no subir a git)
-├── README.md                # Este archivo
-├── QUICK_START.md           # Guía rápida
-└── TESSERACT_INSTALL.md     # Instalación de Tesseract
-```
+1. Verificar que la imagen sea legible
+2. Revisar logs detallados en consola
+3. Probar con `!ayuda` para ver estado
+
+## 📝 Logs
+
+El bot genera logs detallados con prefijos:
+
+- `[CONFIG]` - Configuración del sistema
+- `[BOT]` - Eventos del bot
+- `[FACTURA]` - Procesamiento de facturas
+- `[EXTRACCION]` - Extracción de información
+- `[DATABASE]` - Operaciones de BD
+- `[WEB]` - Servidor web
 
 ## 🔐 Seguridad
 
-⚠️ **IMPORTANTE:**
-- **Nunca** compartas tu `DISCORD_TOKEN` o `CLIENT_SECRET`
-- **No** subas el archivo `.env` a repositorios públicos
-- `gastos.db` contiene datos personales - guárdalo bien
-- El `.gitignore` ya excluye archivos sensibles
+⚠️ **Importante:**
+- Nunca compartir `DISCORD_TOKEN`
+- Mantener `.env` fuera del control de versiones
+- Usar permisos mínimos necesarios
+- Validar entrada de usuarios
 
-## 🐛 Troubleshooting
+## 📦 Dependencias
 
-### ❌ "ModuleNotFoundError: No module named 'tesseract'"
-```bash
-pip install pytesseract
 ```
-
-### ❌ "TesseractNotFoundError"
-→ Lee [TESSERACT_INSTALL.md](TESSERACT_INSTALL.md) para instalar Tesseract
-
-### ❌ "No se encontró el monto total"
-- La imagen debe ser legible (buena resolución)
-- El texto debe estar en español o inglés
-- Prueba con otra factura
-
-### ❌ El bot no responde a imágenes
-- Verifica que el bot tenga permisos de "Leer mensajes"
-- Comprueba que el token sea válido
-- Revisa la consola para ver los errores
-
-### ❌ "Port 8080 already in use"
-Edita `main.py` para cambiar el puerto:
-```python
-run_server(port=8081)
+discord.py==2.6.4
+python-dotenv==1.0.0
+pynacl==1.6.1
+audioop-lts==0.2.2
+aiohttp==3.13.2
+flask==3.0.0
+requests==2.31.0
+pytesseract==0.3.10
+pillow==10.1.0
 ```
-
-## 📚 Extensiones Posibles
-
-- 📈 Gráficos de gastos
-- 📧 Reportes mensuales por email
-- 🏦 Integración con APIs bancarias
-- 🎯 Metas de presupuesto
-- 📱 Aplicación móvil
-
-## 🤝 Contribuciones
-
-¡Las contribuciones son bienvenidas! Puedes:
-- Reportar bugs
-- Sugerir nuevas características
-- Mejorar la documentación
 
 ## 📄 Licencia
 
-Este proyecto es de código abierto. Úsalo libremente.
+Proyecto personal de código abierto.
 
-## ❓ Preguntas
+## 🤝 Contribuciones
 
-¿Problemas o dudas? Revisa:
-1. [TESSERACT_INSTALL.md](TESSERACT_INSTALL.md) - Problemas con OCR
-2. [QUICK_START.md](QUICK_START.md) - Guía rápida
-3. Consola de errores del bot
+Las contribuciones son bienvenidas. Para cambios grandes, abre un issue primero.
+
+## 📞 Soporte
+
+Para reportar bugs o solicitar features, abre un issue en el repositorio.
 
 ---
 
-**¡Listo para gestionar tus gastos! 💰**
+**Última actualización:** Noviembre 2024
+**Versión:** 1.0.0
 
