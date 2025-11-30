@@ -4,7 +4,7 @@ Este módulo asegura que los datos persistan correctamente
 """
 import os
 from pathlib import Path
-from sqlalchemy import event
+from sqlalchemy import event, text
 from sqlalchemy.engine import Engine
 from src.config import DB_PATH
 
@@ -24,11 +24,11 @@ def ensure_db_persistence():
     # Habilitar WAL mode (Write-Ahead Logging)
     # Mejor para concurrencia y evita locks
     with engine.connect() as conn:
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA synchronous=NORMAL")  # FULL para máxima seguridad
-        conn.execute("PRAGMA foreign_keys=ON")
-        conn.execute("PRAGMA cache_size=10000")
-        conn.execute("PRAGMA busy_timeout=5000")  # 5 segundos timeout
+        conn.execute(text("PRAGMA journal_mode=WAL"))
+        conn.execute(text("PRAGMA synchronous=NORMAL"))  # FULL para máxima seguridad
+        conn.execute(text("PRAGMA foreign_keys=ON"))
+        conn.execute(text("PRAGMA cache_size=10000"))
+        conn.execute(text("PRAGMA busy_timeout=5000"))  # 5 segundos timeout
         conn.commit()
 
     print("[DB] ✅ Modo WAL habilitado")

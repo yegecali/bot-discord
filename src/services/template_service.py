@@ -22,7 +22,7 @@ class TemplateService:
 
     def render_gastos_recientes(self, gastos, dias=30):
         """Renderiza plantilla de gastos recientes"""
-        template = self.env.get_template('gastos_recientes.txt')
+        template = self.env.get_template('gastos_recientes.md')
         return template.render(
             gastos=gastos,
             dias=dias,
@@ -31,7 +31,7 @@ class TemplateService:
 
     def render_resumen_total(self, total, cantidad, promedio, dias=30):
         """Renderiza plantilla de resumen total"""
-        template = self.env.get_template('resumen_total.txt')
+        template = self.env.get_template('resumen_total.md')
         return template.render(
             total=total,
             cantidad=cantidad,
@@ -42,7 +42,7 @@ class TemplateService:
 
     def render_gastos_categorias(self, categorias, dias=30):
         """Renderiza plantilla de gastos por categoría"""
-        template = self.env.get_template('gastos_categorias.txt')
+        template = self.env.get_template('gastos_categorias.md')
         total_general = sum(cat[1] for cat in categorias)
         return template.render(
             categorias=categorias,
