@@ -5,7 +5,7 @@ import os
 import json
 import subprocess
 from pathlib import Path
-from src.utils import get_logger
+from src.logger import get_logger
 from src.config.exception_handler import ExceptionHandler
 
 logger = get_logger(__name__)

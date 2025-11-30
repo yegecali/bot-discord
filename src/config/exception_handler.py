@@ -6,7 +6,7 @@ import traceback
 import discord
 from datetime import datetime
 from typing import Optional, Dict, Any
-from src.utils import get_logger
+from src.logger import get_logger
 
 logger = get_logger(__name__)
 

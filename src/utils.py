@@ -16,12 +16,9 @@ import discord
 
 import logging.handlers
 from datetime import datetime
-from src.config.logging_config import LoggerConfig
+from src.logger import get_logger, setup_logging
 from src.config.exception_handler import ExceptionHandler
 
-# Usar la configuración centralizada
-setup_logging = LoggerConfig.initialize
-get_logger = LoggerConfig.get_logger
 
 logger = get_logger(__name__)
 

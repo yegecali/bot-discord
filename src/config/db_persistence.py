@@ -7,7 +7,7 @@ from pathlib import Path
 from sqlalchemy import event, text
 from sqlalchemy.engine import Engine
 from src.config import DB_PATH
-from src.utils import get_logger
+from src.logger import get_logger
 from src.config.exception_handler import ExceptionHandler
 
 logger = get_logger(__name__)

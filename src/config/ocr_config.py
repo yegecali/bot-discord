@@ -4,7 +4,7 @@ Carga palabras clave desde JSON externo
 """
 import json
 from pathlib import Path
-from src.utils import get_logger
+from src.logger import get_logger
 from src.config.exception_handler import ExceptionHandler
 
 logger = get_logger(__name__)
