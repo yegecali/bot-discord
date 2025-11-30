@@ -4,6 +4,7 @@ Lógica de aplicación para operaciones de gastos
 """
 from src.repository import GastoRepository
 from src.config import SIMBOLO_MONEDA
+from src.services.template_service import template_service
 import discord
 
 
@@ -49,89 +50,45 @@ class GastoService:
 
     @staticmethod
     def crear_embed_gastos(usuario_id, dias=30):
-        """Crea un embed de Discord con los gastos"""
+        """Crea un embed de Discord con los gastos usando plantilla"""
         resumen = GastoService.obtener_resumen_gastos(usuario_id, dias)
+        contenido = template_service.render_gastos_recientes(resumen['gastos'], dias)
 
         embed = discord.Embed(
             title=f"📊 Tus Gastos (últimos {dias} días)",
-            description=f"Total de registros: {resumen['cantidad']}",
+            description=contenido,
             color=discord.Color.blue()
         )
-
-        for gasto in resumen['gastos'][:10]:
-            embed.add_field(
-                name=f"{gasto.categoria} - {gasto.fecha}",
-                value=f"**{SIMBOLO_MONEDA} {gasto.monto:.2f}** - {gasto.descripcion}",
-                inline=False
-            )
-
-        if len(resumen['gastos']) > 10:
-            embed.set_footer(text=f"... y {len(resumen['gastos']) - 10} más gastos")
-
         return embed
 
     @staticmethod
     def crear_embed_total(usuario_id, dias=30):
-        """Crea un embed con total de gastos"""
+        """Crea un embed con total de gastos usando plantilla"""
         resumen = GastoService.obtener_resumen_gastos(usuario_id, dias)
+        contenido = template_service.render_resumen_total(
+            resumen['total'],
+            resumen['cantidad'],
+            resumen['promedio'],
+            dias
+        )
 
         embed = discord.Embed(
             title="💰 Resumen de Gastos",
+            description=contenido,
             color=discord.Color.gold()
         )
-
-        embed.add_field(
-            name=f"Total (últimos {dias} días)",
-            value=f"**{SIMBOLO_MONEDA} {resumen['total']:.2f}**",
-            inline=False
-        )
-
-        embed.add_field(
-            name="📈 Número de transacciones",
-            value=f"{resumen['cantidad']}",
-            inline=True
-        )
-
-        if resumen['cantidad'] > 0:
-            embed.add_field(
-                name="📊 Promedio por transacción",
-                value=f"{SIMBOLO_MONEDA} {resumen['promedio']:.2f}",
-                inline=True
-            )
-
         return embed
 
     @staticmethod
     def crear_embed_categorias(usuario_id, dias=30):
-        """Crea un embed con gastos por categoría"""
+        """Crea un embed con gastos por categoría usando plantilla"""
         categorias = GastoService.obtener_resumen_por_categoria(usuario_id, dias)
+        contenido = template_service.render_gastos_categorias(categorias, dias)
 
         embed = discord.Embed(
             title=f"📊 Gastos por Categoría (últimos {dias} días)",
+            description=contenido,
             color=discord.Color.purple()
         )
-
-        emojis = {
-            'alimentación': '🍔',
-            'transporte': '🚗',
-            'servicios': '🔧',
-            'electrónica': '💻',
-            'entretenimiento': '🎮',
-            'salud': '🏥',
-            'compras': '🛍️',
-            'otros': '📦'
-        }
-
-        total_general = 0
-        for categoria, total, cantidad in categorias:
-            emoji = emojis.get(categoria.lower(), '📦')
-            embed.add_field(
-                name=f"{emoji} {categoria}",
-                value=f"{SIMBOLO_MONEDA} {total:.2f} ({cantidad} compras)",
-                inline=False
-            )
-            total_general += total
-
-        embed.set_footer(text=f"Total: {SIMBOLO_MONEDA} {total_general:.2f}")
         return embed
 

@@ -17,21 +17,6 @@ def registrar_comandos_en_controller(bot):
     """
     controller = ComandoController(bot)
 
-    @bot.command(name='ping')
-    async def ping(ctx):
-        """Verifica latencia"""
-        await controller.ping(ctx)
-
-    @bot.command(name='hola')
-    async def hola(ctx):
-        """Saluda"""
-        await controller.hola(ctx)
-
-    @bot.command(name='canales')
-    async def canales(ctx):
-        """Lista canales"""
-        await controller.canales(ctx)
-
     @bot.command(name='gastos')
     async def gastos(ctx, dias: int = 30):
         """Ver gastos"""
@@ -47,10 +32,6 @@ def registrar_comandos_en_controller(bot):
         """Ver por categoría"""
         await controller.ver_categorias(ctx, dias)
 
-    @bot.command(name='ayuda')
-    async def ayuda(ctx):
-        """Ver ayuda"""
-        await controller.ver_ayuda(ctx)
 
 
 class ComandoController:
@@ -58,22 +39,6 @@ class ComandoController:
 
     def __init__(self, bot):
         self.bot = bot
-
-    async def ping(self, ctx):
-        """Comando ping"""
-        latencia = round(self.bot.latency * 1000)
-        embed = DiscordService.crear_embed_pong(latencia)
-        await ctx.send(embed=embed)
-
-    async def hola(self, ctx):
-        """Comando hola"""
-        embed = DiscordService.crear_embed_bienvenida(ctx.author)
-        await ctx.send(embed=embed)
-
-    async def canales(self, ctx):
-        """Comando canales"""
-        embed = DiscordService.listar_canales_guild(ctx.guild)
-        await ctx.send(embed=embed)
 
     async def ver_gastos(self, ctx, dias: int = 30):
         """Comando gastos"""
@@ -91,11 +56,5 @@ class ComandoController:
         """Comando categorias"""
         print(f"[CONTROLLER] !categorias ejecutado por {ctx.author}")
         embed = GastoService.crear_embed_categorias(ctx.author.id, dias)
-        await ctx.send(embed=embed)
-
-    async def ver_ayuda(self, ctx):
-        """Comando ayuda"""
-        print(f"[CONTROLLER] !ayuda ejecutado por {ctx.author}")
-        embed = DiscordService.crear_embed_info_bot()
         await ctx.send(embed=embed)
 
