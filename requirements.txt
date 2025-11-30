@@ -1,0 +1,10 @@
+discord.py==2.6.4
+python-dotenv==1.0.0
+pynacl==1.6.1
+audioop-lts==0.2.2
+aiohttp==3.13.2
+flask==3.0.0
+requests==2.31.0
+pytesseract==0.3.10
+pillow==10.1.0
+
