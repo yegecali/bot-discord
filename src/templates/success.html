@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Discord - Autorización Exitosa</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+        p {
+            color: #666;
+            font-size: 16px;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+        .info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 25px 0;
+            border-left: 4px solid #667eea;
+        }
+        .info-item {
+            margin: 12px 0;
+            text-align: left;
+            padding: 8px;
+        }
+        .label {
+            font-weight: 600;
+            color: #333;
+            display: block;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .value {
+            color: #667eea;
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+            word-break: break-all;
+        }
+        .footer {
+            color: #999;
+            font-size: 13px;
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .success-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        ul {
+            text-align: left;
+            display: inline-block;
+            color: #666;
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+        li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">✅</div>
+        <h1>¡Autorización Exitosa!</h1>
+        <p>El bot ha sido autorizado correctamente en tu servidor.</p>
+
+        <div class="info">
+            <div class="info-item">
+                <span class="label">Servidor ID:</span>
+                <span class="value">{{ guild_id }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Permisos:</span>
+                <span class="value">{{ permissions }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Autorización:</span>
+                <span class="value">Completada</span>
+            </div>
+        </div>
+
+        <p>El bot ya está disponible en tu servidor y listo para usar. Puedes:</p>
+        <ul>
+            <li>Enviar imágenes de facturas para procesar</li>
+            <li>Ver tus gastos con !gastos</li>
+            <li>Obtener resumen con !total</li>
+            <li>Agrupar por categoría con !categorias</li>
+        </ul>
+
+        <div class="footer">
+            <p>Puedes cerrar esta ventana o volver a Discord</p>
+        </div>
+    </div>
+</body>
+</html>
+

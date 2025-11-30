@@ -1,0 +1,11 @@
+{
+  "tesseract": {
+    "rutas": [
+      "C:\\Users\\Yemi Genderson\\AppData\\Local\\Programs\\Tesseract-OCR\\tesseract.exe",
+      "C:\\Program Files\\Tesseract-OCR\\tesseract.exe",
+      "C:\\Program Files (x86)\\Tesseract-OCR\\tesseract.exe"
+    ],
+    "descripcion": "Rutas donde buscar la instalación de Tesseract OCR en orden de preferencia"
+  }
+}
+
