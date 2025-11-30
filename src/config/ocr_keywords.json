@@ -1,0 +1,32 @@
+{
+  "ocr": {
+    "palabras_total": [
+      "total",
+      "monto",
+      "a pagar",
+      "importe",
+      "debe",
+      "pago",
+      "subtotal",
+      "total a pagar",
+      "total neto",
+      "suma total",
+      "gran total"
+    ],
+    "palabras_vendedor": [
+      "comercio",
+      "tienda",
+      "empresa",
+      "establecimiento",
+      "vendedor",
+      "negocio"
+    ],
+    "palabras_fecha": [
+      "fecha",
+      "día",
+      "emisión",
+      "expedición"
+    ]
+  }
+}
+
