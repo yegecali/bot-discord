@@ -5,6 +5,7 @@ Extrae información de facturas: monto, fecha, vendedor, categoría
 import os
 import aiohttp
 import re
+import tempfile
 from pathlib import Path
 from PIL import Image
 import pytesseract
