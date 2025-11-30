@@ -4,6 +4,7 @@ Renderiza mensajes de Discord usando plantillas
 """
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pathlib import Path
+from datetime import datetime
 from src.config import SIMBOLO_MONEDA
 
 
@@ -19,6 +20,40 @@ class TemplateService:
             trim_blocks=True,
             lstrip_blocks=True
         )
+
+        # Agregar filtros personalizados
+        self._add_custom_filters()
+
+    def _add_custom_filters(self):
+        """Agrega filtros personalizados a Jinja2"""
+
+        def strftime_filter(dt_obj, fmt='%d/%m/%Y %H:%M'):
+            """Filtro para formatear fechas"""
+            if isinstance(dt_obj, str):
+                # Si es string "now", usar datetime actual
+                if dt_obj == 'now':
+                    return datetime.now().strftime(fmt)
+                # Si es una fecha string, intentar parsearla
+                try:
+                    dt_obj = datetime.fromisoformat(dt_obj)
+                except:
+                    return str(dt_obj)
+
+            if isinstance(dt_obj, datetime):
+                return dt_obj.strftime(fmt)
+
+            return str(dt_obj)
+
+        def format_money(value, decimals=2):
+            """Filtro para formatear dinero"""
+            try:
+                return f"{float(value):.{decimals}f}"
+            except:
+                return str(value)
+
+        # Registrar filtros
+        self.env.filters['strftime'] = strftime_filter
+        self.env.filters['money'] = format_money
 
     def render_gastos_recientes(self, gastos, dias=30):
         """Renderiza plantilla de gastos recientes"""
