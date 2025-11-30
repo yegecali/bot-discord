@@ -65,20 +65,25 @@ class EventoController:
         try:
             # Descargar imagen
             import io
+            import tempfile
             from PIL import Image
 
             imagen_data = await attachment.read()
-            imagen = Image.open(io.BytesIO(imagen_data))
+
+            # Guardar en archivo temporal
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp:
+                tmp.write(imagen_data)
+                ruta_temporal = tmp.name
 
             # Procesar OCR
             embed = discord.Embed(
-                title="⏳ Procesando factura...",
+                title="[WAIT] Procesando factura...",
                 color=discord.Color.blue()
             )
             msg = await message.reply(embed=embed, mention_author=False)
 
-            # Llamar a procesar_factura
-            datos = procesar_factura(imagen)
+            # Llamar a procesar_factura con await
+            datos = await procesar_factura(ruta_temporal)
 
             if 'error' not in datos:
                 # Crear gasto
@@ -93,19 +98,19 @@ class EventoController:
 
                 # Mostrar éxito
                 embed_exito = discord.Embed(
-                    title=f"✅ Gasto registrado (ID: {gasto.id})",
+                    title=f"[OK] Gasto registrado (ID: {gasto.id})",
                     description=f"**S/. {gasto.monto:.2f}**\n{gasto.descripcion}",
                     color=discord.Color.green()
                 )
 
                 embed_exito.add_field(
-                    name="📁 Categoría",
+                    name="[CATEGORIA]",
                     value=gasto.categoria,
                     inline=True
                 )
 
                 embed_exito.add_field(
-                    name="📅 Fecha",
+                    name="[FECHA]",
                     value=gasto.fecha,
                     inline=True
                 )
@@ -121,7 +126,7 @@ class EventoController:
                 await msg.edit(embed=embed_error)
 
         except Exception as e:
-            print(f"[EVENTO] ❌ Error: {e}")
+            print(f"[EVENTO] [ERROR] Error: {e}")
             embed_error = DiscordService.crear_embed_error(
                 "Error",
                 str(e)
