@@ -4,6 +4,10 @@ Carga palabras clave desde JSON externo
 """
 import json
 from pathlib import Path
+from src.utils import get_logger
+from src.config.exception_handler import ExceptionHandler
+
+logger = get_logger(__name__)
 
 
 class OCRConfig:
@@ -19,14 +23,30 @@ class OCRConfig:
         try:
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 config = json.load(f)
-                print(f"[OCR_CONFIG] Configuración cargada desde: {self.config_path}")
+                logger.info(f"⚙️ Configuración cargada desde: {self.config_path}")
                 return config.get('ocr', {})
-        except FileNotFoundError:
-            print(f"[OCR_CONFIG] [WARN] Archivo no encontrado: {self.config_path}")
-            print(f"[OCR_CONFIG] Usando configuración por defecto")
+        except FileNotFoundError as e:
+            ExceptionHandler.manejar_error(
+                excepcion=e,
+                contexto="Cargando configuración OCR",
+                datos_adicionales={'Archivo': str(self.config_path)}
+            )
+            logger.warning(f"⚠️ Usando configuración por defecto")
             return self._config_por_defecto()
         except json.JSONDecodeError as e:
-            print(f"[OCR_CONFIG] [ERROR] Error parseando JSON: {e}")
+            ExceptionHandler.manejar_error(
+                excepcion=e,
+                contexto="Parseando JSON de configuración OCR",
+                datos_adicionales={'Archivo': str(self.config_path)}
+            )
+            logger.warning(f"⚠️ Usando configuración por defecto")
+            return self._config_por_defecto()
+        except Exception as e:
+            ExceptionHandler.manejar_error(
+                excepcion=e,
+                contexto="Configurando OCR",
+                datos_adicionales={'Archivo': str(self.config_path)}
+            )
             return self._config_por_defecto()
 
     @staticmethod
@@ -62,7 +82,7 @@ class OCRConfig:
         if palabra not in palabras:
             palabras.append(palabra)
             self._guardar_config()
-            print(f"[OCR_CONFIG] Palabra agregada: '{palabra}'")
+            logger.info(f"📝 Palabra agregada: '{palabra}'")
 
     def _guardar_config(self):
         """Guarda la configuración actualizada en JSON"""
@@ -70,9 +90,13 @@ class OCRConfig:
             config_completa = {'ocr': self.config}
             with open(self.config_path, 'w', encoding='utf-8') as f:
                 json.dump(config_completa, f, indent=2, ensure_ascii=False)
-                print(f"[OCR_CONFIG] Configuración guardada")
+                logger.info(f"✅ Configuración guardada")
         except Exception as e:
-            print(f"[OCR_CONFIG] [ERROR] Error guardando config: {e}")
+            ExceptionHandler.manejar_error(
+                excepcion=e,
+                contexto="Guardando configuración OCR",
+                datos_adicionales={'Archivo': str(self.config_path)}
+            )
 
 
 # Instancia global

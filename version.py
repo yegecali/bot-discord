@@ -2,6 +2,9 @@
 Script para gestionar la versión de la aplicación
 """
 from pathlib import Path
+from src.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 def get_version():
@@ -16,7 +19,7 @@ def set_version(new_version):
     """Establece una nueva versión en el archivo VERSION"""
     version_file = Path(__file__).parent / 'VERSION'
     version_file.write_text(f"{new_version}\n")
-    print(f"[VERSION] Versión actualizada a: {new_version}")
+    logger.info(f"📦 Versión actualizada a: {new_version}")
 
 
 def increment_version(part='patch'):
@@ -30,7 +33,7 @@ def increment_version(part='patch'):
     parts = current.split('.')
 
     if len(parts) != 3:
-        print(f"[VERSION] Error: versión inválida: {current}")
+        logger.error(f"❌ Versión inválida: {current}")
         return
 
     major, minor, patch = int(parts[0]), int(parts[1]), int(parts[2])
@@ -57,22 +60,22 @@ if __name__ == '__main__':
         command = sys.argv[1]
 
         if command == 'get':
-            print(get_version())
+            print(get_version())  # Aquí print es OK (salida de CLI)
         elif command == 'set':
             if len(sys.argv) > 2:
                 set_version(sys.argv[2])
             else:
-                print("Uso: python version.py set <version>")
+                logger.warning("⚠️ Uso: python version.py set <version>")
         elif command in ['major', 'minor', 'patch']:
             increment_version(command)
         else:
-            print(f"Comando desconocido: {command}")
+            logger.error(f"❌ Comando desconocido: {command}")
     else:
-        print(f"Versión actual: {get_version()}")
-        print("\nUso:")
-        print("  python version.py get          - Obtener versión actual")
-        print("  python version.py set <v>      - Establecer versión")
-        print("  python version.py major        - Incrementar versión mayor")
-        print("  python version.py minor        - Incrementar versión menor")
-        print("  python version.py patch        - Incrementar versión patch")
+        logger.info(f"📦 Versión actual: {get_version()}")
+        logger.info("\n🔹 Uso:")
+        logger.info("  python version.py get          - Obtener versión actual")
+        logger.info("  python version.py set <v>      - Establecer versión")
+        logger.info("  python version.py major        - Incrementar versión mayor")
+        logger.info("  python version.py minor        - Incrementar versión menor")
+        logger.info("  python version.py patch        - Incrementar versión patch")
 

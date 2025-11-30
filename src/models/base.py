@@ -5,10 +5,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from src.config import DB_PATH
+from src.utils import get_logger
+
+logger = get_logger(__name__)
 
 # Configurar la conexión a la base de datos
 DATABASE_URL = f"sqlite:///{DB_PATH}"
-print(f"[MODELS] Conectando a: {DATABASE_URL}")
+logger.info(f"🗄️ Conectando a: {DATABASE_URL}")
 
 engine = create_engine(
     DATABASE_URL,
@@ -25,9 +28,9 @@ Base = declarative_base()
 
 def init_db():
     """Inicializa la base de datos creando todas las tablas"""
-    print("[MODELS] Inicializando tablas...")
+    logger.info("📋 Inicializando tablas...")
     Base.metadata.create_all(bind=engine)
-    print("[MODELS] [OK] Tablas creadas correctamente")
+    logger.info("✅ Tablas creadas correctamente")
 
 
 def get_db():

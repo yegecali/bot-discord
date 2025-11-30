@@ -3,9 +3,12 @@ Servicio de Gastos
 Lógica de aplicación para operaciones de gastos
 """
 from src.repository import GastoRepository
-from src.config import SIMBOLO_MONEDA
+from src.config import SIMBOLO_MONEDA, ExceptionHandler
 from src.services.template_service import template_service
+from src.utils import get_logger
 import discord
+
+logger = get_logger(__name__)
 
 
 class GastoService:
@@ -14,29 +17,54 @@ class GastoService:
     @staticmethod
     def crear_gasto_desde_factura(usuario_id, descripcion, monto, categoria, imagen_url=None, datos_ocr=None):
         """Crea un gasto desde una factura procesada"""
-        gasto = GastoRepository.crear_gasto(
-            usuario_id=usuario_id,
-            descripcion=descripcion,
-            monto=monto,
-            categoria=categoria,
-            imagen_url=imagen_url,
-            datos_ocr=datos_ocr
-        )
-        print(f"[SERVICE] 📸 Gasto registrado desde factura: {descripcion}")
-        return gasto
+        try:
+            gasto = GastoRepository.crear_gasto(
+                usuario_id=usuario_id,
+                descripcion=descripcion,
+                monto=monto,
+                categoria=categoria,
+                imagen_url=imagen_url,
+                datos_ocr=datos_ocr
+            )
+            logger.info(f"📸 Gasto registrado desde factura: {descripcion}")
+            return gasto
+        except Exception as e:
+            ExceptionHandler.manejar_error(
+                excepcion=e,
+                contexto="Creando gasto desde factura",
+                datos_adicionales={
+                    'Usuario ID': usuario_id,
+                    'Descripción': descripcion,
+                    'Monto': f"{SIMBOLO_MONEDA} {monto:.2f}",
+                    'Categoría': categoria,
+                    'Archivo': imagen_url or 'N/A'
+                }
+            )
+            raise
 
     @staticmethod
     def obtener_resumen_gastos(usuario_id, dias=30):
         """Obtiene resumen de gastos para mostrar"""
-        gastos = GastoRepository.obtener_gastos_usuario(usuario_id, dias)
-        total = GastoRepository.obtener_total_gastos(usuario_id, dias)
+        try:
+            gastos = GastoRepository.obtener_gastos_usuario(usuario_id, dias)
+            total = GastoRepository.obtener_total_gastos(usuario_id, dias)
 
-        return {
-            'gastos': gastos,
-            'total': total,
-            'cantidad': len(gastos),
-            'promedio': total / len(gastos) if gastos else 0
-        }
+            return {
+                'gastos': gastos,
+                'total': total,
+                'cantidad': len(gastos),
+                'promedio': total / len(gastos) if gastos else 0
+            }
+        except Exception as e:
+            ExceptionHandler.manejar_error(
+                excepcion=e,
+                contexto="Obteniendo resumen de gastos",
+                datos_adicionales={
+                    'Usuario ID': usuario_id,
+                    'Rango días': dias
+                }
+            )
+            raise
 
     @staticmethod
     def obtener_resumen_por_categoria(usuario_id, dias=30):

@@ -10,8 +10,10 @@ from pathlib import Path
 from PIL import Image
 import pytesseract
 
-from src.config import TESSERACT_CMD, OCR_IDIOMAS, SIMBOLO_MONEDA, ocr_config
-from src.utils import extraer_numero, limpiar_archivo_temporal, crear_archivo_temporal
+from src.config import TESSERACT_CMD, OCR_IDIOMAS, SIMBOLO_MONEDA, ocr_config, ExceptionHandler
+from src.utils import extraer_numero, limpiar_archivo_temporal, crear_archivo_temporal, get_logger
+
+logger = get_logger(__name__)
 
 # Configurar Tesseract si fue encontrado
 if TESSERACT_CMD:
@@ -28,19 +30,23 @@ async def descargar_imagen(url):
         str: Ruta del archivo temporal descargado, o None si falla
     """
     try:
-        print(f"[FACTURA] Descargando imagen desde: {url}")
+        logger.info(f"📥 Descargando imagen desde: {url}")
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
                 if resp.status == 200:
                     with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp:
                         data = await resp.read()
                         tmp.write(data)
-                        print(f"[FACTURA] ✅ Imagen descargada: {len(data)} bytes")
+                        logger.info(f"✅ Imagen descargada: {len(data)} bytes")
                         return tmp.name
                 else:
-                    print(f"[FACTURA] ❌ Error HTTP {resp.status}")
+                    logger.error(f"❌ Error HTTP {resp.status}")
     except Exception as e:
-        print(f'[FACTURA] ❌ Error descargando: {e}')
+        ExceptionHandler.manejar_error(
+            excepcion=e,
+            contexto="Descargando imagen de factura",
+            datos_adicionales={'URL': url}
+        )
     return None
 
 async def procesar_factura(ruta_imagen):
@@ -54,55 +60,61 @@ async def procesar_factura(ruta_imagen):
         dict: Información extraída de la factura
     """
     try:
-        print(f"\n[FACTURA] ===== INICIANDO PROCESAMIENTO =====")
-        print(f"[FACTURA] Archivo: {ruta_imagen}")
+        logger.info(f"\n📋 ===== INICIANDO PROCESAMIENTO =====")
+        logger.info(f"📂 Archivo: {ruta_imagen}")
 
         # Verificar que el archivo existe
         if not os.path.exists(ruta_imagen):
-            print(f"[FACTURA] ❌ Archivo no existe")
+            logger.error(f"❌ Archivo no existe")
             return {'error': 'Archivo de imagen no encontrado'}
 
-        print(f"[FACTURA] ✅ Archivo existe ({os.path.getsize(ruta_imagen)} bytes)")
+        logger.info(f"✅ Archivo existe ({os.path.getsize(ruta_imagen)} bytes)")
 
         # Abrir imagen con PIL
-        print(f"[FACTURA] Abriendo imagen...")
+        logger.info(f"🖼️ Abriendo imagen...")
         imagen = Image.open(ruta_imagen)
-        print(f"[FACTURA] ✅ Imagen abierta: {imagen.size} - {imagen.format}")
+        logger.info(f"✅ Imagen abierta: {imagen.size} - {imagen.format}")
 
         # Extraer texto con OCR
-        print(f"[FACTURA] Iniciando OCR con Tesseract...")
-        print(f"[FACTURA] Idiomas: {OCR_IDIOMAS}")
+        logger.info(f"🔍 Iniciando OCR con Tesseract...")
+        logger.info(f"🗣️ Idiomas: {OCR_IDIOMAS}")
 
         try:
             texto = pytesseract.image_to_string(imagen, lang=OCR_IDIOMAS)
-            print(f"[FACTURA] ✅ OCR completado ({len(texto)} caracteres)")
+            logger.info(f"✅ OCR completado ({len(texto)} caracteres)")
 
             # Mostrar primeras líneas del texto
             lineas_muestra = texto.split('\n')[:5]
             for linea in lineas_muestra:
                 if linea.strip():
-                    print(f"[FACTURA] > {linea[:80]}")
+                    logger.debug(f"📝 > {linea[:80]}")
         except Exception as ocr_error:
-            print(f"[FACTURA] ❌ Error OCR: {type(ocr_error).__name__}: {str(ocr_error)}")
+            ExceptionHandler.manejar_error(
+                excepcion=ocr_error,
+                contexto="Ejecutando OCR",
+                datos_adicionales={'Archivo': ruta_imagen, 'Tamaño': imagen.size}
+            )
             return {'error': f'Error en OCR: {str(ocr_error)}'}
 
         # Extraer información de la factura
-        print(f"[FACTURA] Extrayendo información...")
+        logger.info(f"📊 Extrayendo información...")
         datos = _extraer_informacion(texto)
-        print(f"[FACTURA] ✅ Información extraída")
+        logger.info(f"✅ Información extraída")
 
         if not datos.get('monto_total'):
-            print(f"[FACTURA] ❌ No se encontró monto total")
+            logger.error(f"❌ No se encontró monto total")
             return {'error': 'No se encontró el monto total en la factura'}
 
-        print(f"[FACTURA] ✅ Procesamiento exitoso")
-        print(f"[FACTURA] ===== PROCESAMIENTO COMPLETADO =====\n")
+        logger.info(f"✅ Procesamiento exitoso")
+        logger.info(f"📋 ===== PROCESAMIENTO COMPLETADO =====\n")
         return datos
 
     except Exception as e:
-        print(f"[FACTURA] ❌ Error: {type(e).__name__}: {str(e)}")
-        import traceback
-        print(traceback.format_exc())
+        ExceptionHandler.manejar_error(
+            excepcion=e,
+            contexto="Procesando factura con OCR",
+            datos_adicionales={'Archivo': ruta_imagen}
+        )
         return {'error': f'Error: {str(e)}'}
     finally:
         # Limpiar archivo temporal
@@ -118,10 +130,10 @@ def _extraer_informacion(texto):
     Returns:
         dict: Información de la factura
     """
-    print(f"[EXTRACCION] Analizando {len(texto)} caracteres")
+    logger.info(f"📊 Analizando {len(texto)} caracteres")
 
     lineas = [l.strip() for l in texto.split('\n')]
-    print(f"[EXTRACCION] Total de líneas: {len(lineas)}")
+    logger.info(f"📋 Total de líneas: {len(lineas)}")
 
     # ================================================================
     # EXTRACCIÓN DE MONTO TOTAL
@@ -151,11 +163,11 @@ def _extraer_informacion(texto):
 
     # Búsqueda de items (líneas con moneda o números)
     items = []
-    print(f"[EXTRACCION] Extrayendo items...")
+    logger.info(f"📦 Extrayendo items...")
     for linea in lineas:
         if re.search(r'S/\.\s*\d+[.,]\d{2}', linea) or re.search(r'\$\s*\d+[.,]\d{2}', linea):
             items.append(linea)
-    print(f"[EXTRACCION] ✅ Items encontrados: {len(items)}")
+    logger.info(f"✅ Items encontrados: {len(items)}")
 
     resultado = {
         'monto_total': monto_total,
@@ -167,69 +179,69 @@ def _extraer_informacion(texto):
         'items': items
     }
 
-    print(f"[EXTRACCION] ✅ Resumen:")
-    print(f"[EXTRACCION]   - Monto: {moneda} {monto_total:.2f}" if monto_total else "[EXTRACCION]   - Monto: No encontrado")
-    print(f"[EXTRACCION]   - Vendedor: {vendedor}")
-    print(f"[EXTRACCION]   - Fecha: {fecha or 'No encontrada'}")
-    print(f"[EXTRACCION]   - Descripción: {descripcion}")
-    print(f"[EXTRACCION]   - Categoría: {categoria}")
-    print(f"[EXTRACCION]   - Items: {len(items)}")
+    logger.info(f"✅ Resumen:")
+    logger.info(f"💰 Monto: {moneda} {monto_total:.2f}" if monto_total else "💰 Monto: No encontrado")
+    logger.info(f"🏪 Vendedor: {vendedor}")
+    logger.info(f"📅 Fecha: {fecha or 'No encontrada'}")
+    logger.info(f"📝 Descripción: {descripcion}")
+    logger.info(f"📂 Categoría: {categoria}")
+    logger.info(f"📦 Items: {len(items)}")
 
     return resultado
 
 
 def _extraer_monto(lineas, texto_completo):
     """Extrae el monto total usando múltiples criterios"""
-    print(f"[MONTO] Iniciando búsqueda de monto...")
+    logger.info(f"💰 Iniciando búsqueda de monto...")
 
     monto_total = None
     palabras_total = ocr_config.get_palabras_total()
 
     # Criterio 1: Palabras clave específicas
-    print(f"[MONTO] Criterio 1: Palabras clave {palabras_total}")
+    logger.debug(f"Criterio 1: Palabras clave {palabras_total}")
     for idx, linea in enumerate(lineas):
         linea_lower = linea.lower()
         for palabra in palabras_total:
             if palabra in linea_lower and not monto_total:
-                print(f"[MONTO] > Encontrada palabra '{palabra}' en línea {idx}")
+                logger.debug(f"Encontrada palabra '{palabra}' en línea {idx}")
                 monto_total = _extraer_numero(linea)
                 if monto_total:
-                    print(f"[MONTO] ✅ Monto por palabra clave: {monto_total:.2f}")
+                    logger.debug(f"✅ Monto por palabra clave: {monto_total:.2f}")
                     return monto_total
 
     # Criterio 2: Línea con símbolo de moneda al final
-    print(f"[MONTO] Criterio 2: Líneas con símbolo de moneda")
+    logger.debug(f"Criterio 2: Líneas con símbolo de moneda")
     for linea in lineas:
         if re.search(r'(S/\.|€|\$)\s*\d+[.,]\d{2}\s*$', linea):
             monto = _extraer_numero(linea)
             if monto:
-                print(f"[MONTO] ✅ Monto por símbolo de moneda: {monto:.2f}")
+                logger.debug(f"✅ Monto por símbolo de moneda: {monto:.2f}")
                 return monto
 
     # Criterio 3: Línea con 2 decimales (número más grande)
-    print(f"[MONTO] Criterio 3: Número más grande con decimales")
+    logger.debug(f"Criterio 3: Número más grande con decimales")
     numeros = re.findall(r'(\d+[.,]\d{2})', texto_completo)
     if numeros:
         try:
             monto_str = numeros[-1].replace(',', '.')
             monto_total = float(monto_str)
             if monto_total > 0:
-                print(f"[MONTO] ✅ Monto por número más grande: {monto_total:.2f}")
+                logger.debug(f"✅ Monto por número más grande: {monto_total:.2f}")
                 return monto_total
         except ValueError:
             pass
 
     # Criterio 4: Línea que contiene muchos números (suma total)
-    print(f"[MONTO] Criterio 4: Línea con múltiples números")
+    logger.debug(f"Criterio 4: Línea con múltiples números")
     for linea in reversed(lineas):
         numeros_en_linea = re.findall(r'\d+[.,]\d{2}', linea)
         if len(numeros_en_linea) >= 2:
             monto = _extraer_numero(linea)
             if monto:
-                print(f"[MONTO] ✅ Monto por línea con múltiples números: {monto:.2f}")
+                logger.debug(f"✅ Monto por línea con múltiples números: {monto:.2f}")
                 return monto
 
-    print(f"[MONTO] ⚠️ No se encontró monto")
+    logger.warning(f"⚠️ No se encontró monto")
     return None
 
 
@@ -253,68 +265,68 @@ def _detectar_moneda(texto):
 
 def _extraer_vendedor(lineas, texto_completo):
     """Extrae el vendedor usando múltiples criterios"""
-    print(f"[VENDEDOR] Buscando vendedor...")
+    logger.info(f"🏪 Buscando vendedor...")
 
     vendedor = 'Comercio'
 
     # Criterio 1: Primeras líneas no vacías que no sean números
-    print(f"[VENDEDOR] Criterio 1: Primeras líneas no numéricas")
+    logger.debug(f"Criterio 1: Primeras líneas no numéricas")
     for linea in lineas[:10]:
         if (linea and len(linea) > 3 and
             not re.search(r'^[\d\s\-\/]+$', linea) and
             not re.search(r'^[A-Z\s]+$', linea)):
             vendedor = linea
-            print(f"[VENDEDOR] ✅ Vendedor: {vendedor}")
+            logger.debug(f"✅ Vendedor: {vendedor}")
             return vendedor
 
     # Criterio 2: Línea que contiene palabras clave de negocio
-    print(f"[VENDEDOR] Criterio 2: Palabras clave de negocio")
+    logger.debug(f"Criterio 2: Palabras clave de negocio")
     palabras_negocio = ['tienda', 'comercio', 'empresa', 'establecimiento', 'negocio', 'supermercado', 'mercado']
     for linea in lineas:
         linea_lower = linea.lower()
         for palabra in palabras_negocio:
             if palabra in linea_lower:
                 vendedor = linea
-                print(f"[VENDEDOR] ✅ Vendedor: {vendedor}")
+                logger.debug(f"✅ Vendedor: {vendedor}")
                 return vendedor
 
     # Criterio 3: Línea con mayúsculas (frecuentemente es el nombre de la tienda)
-    print(f"[VENDEDOR] Criterio 3: Línea con mayúsculas")
+    logger.debug(f"Criterio 3: Línea con mayúsculas")
     for linea in lineas[:15]:
         if linea and re.search(r'[A-Z]{3,}', linea) and len(linea) > 5:
             vendedor = linea
-            print(f"[VENDEDOR] ✅ Vendedor: {vendedor}")
+            logger.debug(f"✅ Vendedor: {vendedor}")
             return vendedor
 
-    print(f"[VENDEDOR] Vendedor por defecto: {vendedor}")
+    logger.debug(f"Vendedor por defecto: {vendedor}")
     return vendedor
 
 
 def _extraer_fecha(lineas, texto_completo):
     """Extrae la fecha usando múltiples criterios"""
-    print(f"[FECHA] Buscando fecha...")
+    logger.info(f"📅 Buscando fecha...")
 
     # Criterio 1: Formato dd/mm/yyyy o dd-mm-yyyy
-    print(f"[FECHA] Criterio 1: Formato dd/mm/yyyy o dd-mm-yyyy")
+    logger.debug(f"Criterio 1: Formato dd/mm/yyyy o dd-mm-yyyy")
     patron_fecha1 = r'(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})'
     match = re.search(patron_fecha1, texto_completo)
     if match:
         fecha = match.group(1)
-        print(f"[FECHA] ✅ Fecha encontrada: {fecha}")
+        logger.debug(f"✅ Fecha encontrada: {fecha}")
         return fecha
 
     # Criterio 2: Formato completo con mes en texto
-    print(f"[FECHA] Criterio 2: Formato con mes en texto")
+    logger.debug(f"Criterio 2: Formato con mes en texto")
     meses = r'(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|january|february|march|april|may|june|july|august|september|october|november|december)'
     patron_fecha2 = rf'(\d{{1,2}}\s+de?\s+{meses}\s+de\s+\d{{2,4}}|\d{{1,2}}\s+{meses}\s+\d{{2,4}})'
     match = re.search(patron_fecha2, texto_completo, re.IGNORECASE)
     if match:
         fecha = match.group(0)
-        print(f"[FECHA] ✅ Fecha encontrada: {fecha}")
+        logger.debug(f"✅ Fecha encontrada: {fecha}")
         return fecha
 
     # Criterio 3: Línea que contiene palabras clave de fecha
-    print(f"[FECHA] Criterio 3: Palabras clave de fecha")
+    logger.debug(f"Criterio 3: Palabras clave de fecha")
     palabras_fecha = ['fecha', 'fecha de emisión', 'expedición', 'día']
     for idx, linea in enumerate(lineas):
         linea_lower = linea.lower()
@@ -324,51 +336,51 @@ def _extraer_fecha(lineas, texto_completo):
                 numero = re.search(r'(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', linea)
                 if numero:
                     fecha = numero.group(1)
-                    print(f"[FECHA] ✅ Fecha por palabra clave: {fecha}")
+                    logger.debug(f"✅ Fecha por palabra clave: {fecha}")
                     return fecha
                 # Buscar en siguiente línea
                 if idx + 1 < len(lineas):
                     numero = re.search(r'(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', lineas[idx + 1])
                     if numero:
                         fecha = numero.group(1)
-                        print(f"[FECHA] ✅ Fecha en línea siguiente: {fecha}")
+                        logger.debug(f"✅ Fecha en línea siguiente: {fecha}")
                         return fecha
 
-    print(f"[FECHA] ⚠️ Fecha no encontrada")
+    logger.warning(f"⚠️ Fecha no encontrada")
     return None
 
 
 def _extraer_descripcion(lineas, vendedor, texto_completo):
     """Extrae la descripción usando múltiples criterios"""
-    print(f"[DESCRIPCION] Extrayendo descripción...")
+    logger.info(f"📝 Extrayendo descripción...")
 
     # Criterio 1: Usar el vendedor
     descripcion = f'Compra en {vendedor}'
 
     # Criterio 2: Buscar línea con productos/artículos
-    print(f"[DESCRIPCION] Criterio 2: Línea con productos")
+    logger.debug(f"Criterio 2: Línea con productos")
     for linea in lineas:
         if (re.search(r'\b(producto|artículo|item|referencia)\b', linea, re.IGNORECASE) and
             len(linea) > 10):
             descripcion = linea
-            print(f"[DESCRIPCION] ✅ Descripción por producto: {descripcion}")
+            logger.debug(f"✅ Descripción por producto: {descripcion}")
             return descripcion
 
     # Criterio 3: Línea más larga entre líneas de descripción (frecuentemente la descripción)
-    print(f"[DESCRIPCION] Criterio 3: Línea más larga")
+    logger.debug(f"Criterio 3: Línea más larga")
     lineas_largas = [l for l in lineas if 15 < len(l) < 80 and not re.search(r'^\d+[\.,\s\d]+$', l)]
     if lineas_largas:
         descripcion = max(lineas_largas, key=len)
-        print(f"[DESCRIPCION] ✅ Descripción por línea larga: {descripcion}")
+        logger.debug(f"✅ Descripción por línea larga: {descripcion}")
         return descripcion
 
-    print(f"[DESCRIPCION] Descripción por defecto: {descripcion}")
+    logger.debug(f"Descripción por defecto: {descripcion}")
     return descripcion
 
 
 def _detectar_categoria(descripcion, texto_completo):
     """Detecta la categoría automáticamente"""
-    print(f"[CATEGORIA] Detectando categoría...")
+    logger.info(f"📂 Detectando categoría...")
 
     categorias_map = {
         'Alimentación': ['supermercado', 'mercado', 'panadería', 'carnicería', 'verdulería', 'tienda de alimentos', 'restaurante', 'comida'],
@@ -385,9 +397,9 @@ def _detectar_categoria(descripcion, texto_completo):
     for categoria, palabras_clave in categorias_map.items():
         for palabra in palabras_clave:
             if palabra in texto_busqueda:
-                print(f"[CATEGORIA] ✅ Categoría detectada: {categoria}")
+                logger.debug(f"✅ Categoría detectada: {categoria}")
                 return categoria
 
-    print(f"[CATEGORIA] Categoría por defecto: Otros")
+    logger.debug(f"Categoría por defecto: Otros")
     return 'Otros'
 

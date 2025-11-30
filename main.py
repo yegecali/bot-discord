@@ -7,21 +7,28 @@ import threading
 import sys
 from src.web_server import run_server
 from src.bot import bot, run_bot
-from src.config import WEB_HOST, WEB_PORT
+from src.config import WEB_HOST, WEB_PORT, LoggerConfig
+from src.utils import get_logger
+
+# Inicializar logging centralizado
+LoggerConfig.initialize(level='INFO', enable_file=True, enable_console=True)
+logger = get_logger(__name__)
 
 def run_web_server():
     """Ejecuta el servidor web en un thread separado"""
     try:
-        print(f'[MAIN] Iniciando servidor web en http://{WEB_HOST}:{WEB_PORT}')
+        logger.info(f'🚀 Iniciando servidor web en http://{WEB_HOST}:{WEB_PORT}')
         run_server(host=WEB_HOST, port=WEB_PORT)
     except Exception as e:
-        print(f'[MAIN] ❌ Error en servidor web: {e}')
+        logger.error(f'❌ Error en servidor web: {e}')
         sys.exit(1)
 
 def main():
     """Función principal"""
-    print('[MAIN] ===== BOT PERSONAL DE DISCORD =====')
-    print('[MAIN] Iniciando servicios...\n')
+    logger.info('=' * 50)
+    logger.info('🤖 BOT PERSONAL DE DISCORD')
+    logger.info('=' * 50)
+    logger.info('🔧 Iniciando servicios...\n')
 
     # Iniciar servidor web en thread separado
     web_thread = threading.Thread(target=run_web_server, daemon=True)

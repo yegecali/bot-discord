@@ -5,8 +5,12 @@ import os
 import json
 import subprocess
 from pathlib import Path
+from src.utils import get_logger
+from src.config.exception_handler import ExceptionHandler
 
-print("[CONFIG] ============ CONFIGURANDO TESSERACT ============")
+logger = get_logger(__name__)
+
+logger.info("🔧 ============ CONFIGURANDO TESSERACT ============")
 
 # ============================================================
 # TESSERACT OCR - Configuración automática
@@ -20,14 +24,32 @@ def _cargar_rutas_tesseract():
         with open(ruta_config, 'r', encoding='utf-8') as f:
             config = json.load(f)
             return config.get('tesseract', {}).get('rutas', [])
-    except Exception as e:
-        print(f"[CONFIG] [WARN] Error cargando {ruta_config}: {e}")
-        print(f"[CONFIG] Usando rutas por defecto")
+    except FileNotFoundError as e:
+        ExceptionHandler.manejar_error(
+            excepcion=e,
+            contexto="Cargando rutas de Tesseract",
+            datos_adicionales={'Archivo': str(ruta_config)}
+        )
+        logger.info(f"Usando rutas por defecto")
         return [
             r'C:\Users\Yemi Genderson\AppData\Local\Programs\Tesseract-OCR\tesseract.exe',
             r'C:\Program Files\Tesseract-OCR\tesseract.exe',
             r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe',
         ]
+    except json.JSONDecodeError as e:
+        ExceptionHandler.manejar_error(
+            excepcion=e,
+            contexto="Parseando JSON de Tesseract",
+            datos_adicionales={'Archivo': str(ruta_config)}
+        )
+        return []
+    except Exception as e:
+        ExceptionHandler.manejar_error(
+            excepcion=e,
+            contexto="Configurando rutas de Tesseract",
+            datos_adicionales={'Archivo': str(ruta_config)}
+        )
+        return []
 
 
 TESSERACT_RUTAS = _cargar_rutas_tesseract()
@@ -44,11 +66,11 @@ for ruta in TESSERACT_RUTAS:
                 TESSERACT_CMD = ruta
                 TESSERACT_ENCONTRADO = True
                 version = resultado.stdout.split('\n')[0]
-                print(f"[CONFIG] [OK] Tesseract encontrado en: {ruta}")
-                print(f"[CONFIG] Versi{chr(243)}n: {version}")
+                logger.info(f"✅ Tesseract encontrado en: {ruta}")
+                logger.info(f"Versión: {version}")
                 break
         except Exception as e:
-            print(f"[CONFIG] [WARN] Error verificando {ruta}: {e}")
+            logger.warning(f"⚠️ Error verificando {ruta}: {e}")
 
 # Si no se encontró en rutas locales, buscar en PATH
 if not TESSERACT_ENCONTRADO:
@@ -57,8 +79,8 @@ if not TESSERACT_ENCONTRADO:
         if resultado.returncode == 0:
             TESSERACT_ENCONTRADO = True
             version = resultado.stdout.split('\n')[0]
-            print(f"[CONFIG] [OK] Tesseract encontrado en PATH")
-            print(f"[CONFIG] Versi{chr(243)}n: {version}")
+            logger.info(f"✅ Tesseract encontrado en PATH")
+            logger.info(f"Versión: {version}")
             # Obtener ruta completa
             try:
                 resultado_where = subprocess.run(['where', 'tesseract'], capture_output=True, text=True)
@@ -67,13 +89,13 @@ if not TESSERACT_ENCONTRADO:
             except:
                 pass
     except Exception as e:
-        print(f"[CONFIG] [WARN] Error buscando Tesseract en PATH: {e}")
+        logger.warning(f"⚠️ Error buscando Tesseract en PATH: {e}")
 
 if TESSERACT_ENCONTRADO:
-    print(f"[CONFIG] [OK] Tesseract configurado correctamente")
+    logger.info(f"✅ Tesseract configurado correctamente")
 else:
-    print(f"[CONFIG] [ERROR] ADVERTENCIA: Tesseract no encontrado")
-    print(f"[CONFIG] Descargalo desde: https://github.com/UB-Mannheim/tesseract/wiki")
+    logger.error(f"❌ ADVERTENCIA: Tesseract no encontrado")
+    logger.error(f"Descargalo desde: https://github.com/UB-Mannheim/tesseract/wiki")
 
-print("[CONFIG] ============ CONFIGURACION COMPLETADA ============\n")
+logger.info("🔧 ============ CONFIGURACION COMPLETADA ============\n")
 

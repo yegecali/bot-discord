@@ -6,6 +6,9 @@ import discord
 from discord.ext import commands
 from src.services import GastoService, DiscordService
 from src.config import COMMAND_PREFIX
+from src.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 def registrar_comandos_en_controller(bot):
@@ -42,19 +45,19 @@ class ComandoController:
 
     async def ver_gastos(self, ctx, dias: int = 30):
         """Comando gastos"""
-        print(f"[CONTROLLER] !gastos ejecutado por {ctx.author}")
+        logger.info(f"💰 Comando !gastos ejecutado por {ctx.author}")
         embed = GastoService.crear_embed_gastos(ctx.author.id, dias)
         await ctx.send(embed=embed)
 
     async def ver_total(self, ctx, dias: int = 30):
         """Comando total"""
-        print(f"[CONTROLLER] !total ejecutado por {ctx.author}")
+        logger.info(f"📊 Comando !total ejecutado por {ctx.author}")
         embed = GastoService.crear_embed_total(ctx.author.id, dias)
         await ctx.send(embed=embed)
 
     async def ver_categorias(self, ctx, dias: int = 30):
         """Comando categorias"""
-        print(f"[CONTROLLER] !categorias ejecutado por {ctx.author}")
+        logger.info(f"📈 Comando !categorias ejecutado por {ctx.author}")
         embed = GastoService.crear_embed_categorias(ctx.author.id, dias)
         await ctx.send(embed=embed)
 

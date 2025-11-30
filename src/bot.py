@@ -8,7 +8,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from src.config import DISCORD_TOKEN, COMMAND_PREFIX
+from src.config import DISCORD_TOKEN, COMMAND_PREFIX, LoggerConfig
 from src.models import init_db
 from src.config.db_persistence import (
     verify_db_exists,
@@ -16,18 +16,23 @@ from src.config.db_persistence import (
     check_db_permissions
 )
 from src.controller import registrar_comandos_en_controller, registrar_eventos_en_controller
+from src.utils import get_logger
 
 # Cargar variables de entorno
 load_dotenv()
 
+# Inicializar logging centralizado
+LoggerConfig.initialize(level='INFO', enable_file=True, enable_console=True)
+logger = get_logger(__name__)
+
 # ============================================================
 # INICIALIZAR BD CON PERSISTENCIA
 # ============================================================
-print("\n[BOT] Inicializando BD con persistencia...")
+logger.info("🔧 Inicializando BD con persistencia...")
 
 # Verificar permisos
 if not check_db_permissions():
-    print("[BOT] ❌ Error de permisos en BD")
+    logger.error("❌ Error de permisos en BD")
     exit(1)
 
 # Verificar que BD existe
@@ -39,7 +44,7 @@ init_db()
 # Habilitar WAL mode y persistencia
 ensure_db_persistence()
 
-print("[BOT] ✅ BD lista para persistencia\n")
+logger.info("✅ BD lista para persistencia\n")
 
 # Configurar intents
 intents = discord.Intents.default()
@@ -65,7 +70,7 @@ def run_bot():
     if not DISCORD_TOKEN:
         raise ValueError('DISCORD_TOKEN no está configurado en .env')
 
-    print('[BOT] Iniciando Bot Personal de Discord...')
+    logger.info('🚀 Iniciando Bot Personal de Discord...')
     bot.run(DISCORD_TOKEN)
 
 

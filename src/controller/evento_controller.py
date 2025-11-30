@@ -6,6 +6,10 @@ import discord
 from src.repository import GastoRepository
 from src.factura_processor import procesar_factura
 from src.services import GastoService, DiscordService
+from src.config import ExceptionHandler
+from src.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 def registrar_eventos_en_controller(bot):
@@ -36,12 +40,12 @@ class EventoController:
 
     async def on_ready(self):
         """Bot conectado"""
-        print(f"[EVENTO] Bot conectado como {self.bot.user}")
-        print(f"[EVENTO] Latencia: {round(self.bot.latency * 1000)}ms")
+        logger.info(f"🤖 Bot conectado como {self.bot.user}")
+        logger.info(f"⏱️ Latencia: {round(self.bot.latency * 1000)}ms")
 
     async def on_message(self, message):
         """Procesar mensajes"""
-        print(f"[EVENTO] Mensaje de {message.author}: {message.content}")
+        logger.debug(f"📬 Mensaje de {message.author}: {message.content}")
 
         # Ignorar mensajes del bot
         if message.author == self.bot.user:
@@ -52,7 +56,7 @@ class EventoController:
         if message.attachments:
             for attachment in message.attachments:
                 if attachment.content_type.startswith('image/'):
-                    print(f"[EVENTO] 📸 Imagen detectada: {attachment.filename}")
+                    logger.info(f"📸 Imagen detectada: {attachment.filename}")
                     await self._procesar_factura(message, attachment)
 
         # Procesar comandos normales
@@ -60,7 +64,7 @@ class EventoController:
 
     async def _procesar_factura(self, message, attachment):
         """Procesa una factura"""
-        print(f"[EVENTO] Procesando factura...")
+        logger.info(f"⏳ Procesando factura...")
 
         try:
             # Descargar imagen
@@ -77,7 +81,7 @@ class EventoController:
 
             # Procesar OCR
             embed = discord.Embed(
-                title="[WAIT] Procesando factura...",
+                title="⏳ Procesando factura...",
                 color=discord.Color.blue()
             )
             msg = await message.reply(embed=embed, mention_author=False)
@@ -98,24 +102,25 @@ class EventoController:
 
                 # Mostrar éxito
                 embed_exito = discord.Embed(
-                    title=f"[OK] Gasto registrado (ID: {gasto.id})",
+                    title=f"✅ Gasto registrado (ID: {gasto.id})",
                     description=f"**S/. {gasto.monto:.2f}**\n{gasto.descripcion}",
                     color=discord.Color.green()
                 )
 
                 embed_exito.add_field(
-                    name="[CATEGORIA]",
+                    name="📁 CATEGORIA",
                     value=gasto.categoria,
                     inline=True
                 )
 
                 embed_exito.add_field(
-                    name="[FECHA]",
+                    name="📅 FECHA",
                     value=gasto.fecha,
                     inline=True
                 )
 
                 await msg.edit(embed=embed_exito)
+                logger.info(f"✅ Factura procesada exitosamente - ID: {gasto.id}")
 
             else:
                 # Error en OCR
@@ -124,12 +129,21 @@ class EventoController:
                     datos['error']
                 )
                 await msg.edit(embed=embed_error)
+                logger.error(f"❌ Error en OCR: {datos['error']}")
 
         except Exception as e:
-            print(f"[EVENTO] [ERROR] Error: {e}")
-            embed_error = DiscordService.crear_embed_error(
-                "Error",
-                str(e)
+            # Usar manejador centralizado de excepciones
+            resultado = ExceptionHandler.manejar_error(
+                excepcion=e,
+                contexto="Procesamiento de factura",
+                datos_adicionales={
+                    'Usuario': str(message.author),
+                    'Archivo': attachment.filename,
+                    'Tamaño': f"{len(imagen_data)} bytes" if 'imagen_data' in locals() else 'N/A'
+                }
             )
+
+            # Enviar embed de error a Discord
+            embed_error = resultado['embed']
             await message.reply(embed=embed_error, mention_author=False)
 

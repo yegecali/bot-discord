@@ -4,6 +4,10 @@ Lógica de negocio reutilizable
 """
 from src.models import SessionLocal
 from src.dao import GastoDAO
+from src.utils import get_logger
+from src.config import ExceptionHandler
+
+logger = get_logger(__name__)
 
 
 class GastoRepository:
@@ -16,14 +20,23 @@ class GastoRepository:
         """Crea un nuevo gasto"""
         db = SessionLocal()
         try:
-            print(f"[REPOSITORY] 📝 Creando gasto: {descripcion} - S/. {monto:.2f}")
+            logger.info(f"📝 Creando gasto: {descripcion} - S/. {monto:.2f}")
             gasto = GastoDAO.crear(
                 db, usuario_id, descripcion, monto, categoria, imagen_url, datos_ocr
             )
-            print(f"[REPOSITORY] ✅ Gasto creado con ID: {gasto.id}")
+            logger.info(f"✅ Gasto creado con ID: {gasto.id}")
             return gasto
         except Exception as e:
-            print(f"[REPOSITORY] ❌ Error creando gasto: {e}")
+            ExceptionHandler.manejar_error(
+                excepcion=e,
+                contexto="Creando gasto",
+                datos_adicionales={
+                    'Usuario ID': usuario_id,
+                    'Descripción': descripcion,
+                    'Monto': f"S/. {monto:.2f}",
+                    'Categoría': categoria
+                }
+            )
             db.rollback()
             raise
         finally:
@@ -36,8 +49,15 @@ class GastoRepository:
         try:
             gasto = GastoDAO.obtener_por_id(db, gasto_id)
             if not gasto:
-                print(f"[REPOSITORY] ⚠️ Gasto {gasto_id} no encontrado")
+                logger.warning(f"⚠️ Gasto {gasto_id} no encontrado")
             return gasto
+        except Exception as e:
+            ExceptionHandler.manejar_error(
+                excepcion=e,
+                contexto="Obteniendo gasto",
+                datos_adicionales={'Gasto ID': gasto_id}
+            )
+            raise
         finally:
             db.close()
 
@@ -47,8 +67,18 @@ class GastoRepository:
         db = SessionLocal()
         try:
             gastos = GastoDAO.obtener_por_rango_fechas(db, usuario_id, dias)
-            print(f"[REPOSITORY] 📊 Se encontraron {len(gastos)} gastos")
+            logger.info(f"📊 Se encontraron {len(gastos)} gastos")
             return gastos
+        except Exception as e:
+            ExceptionHandler.manejar_error(
+                excepcion=e,
+                contexto="Obteniendo gastos del usuario",
+                datos_adicionales={
+                    'Usuario ID': usuario_id,
+                    'Rango días': dias
+                }
+            )
+            raise
         finally:
             db.close()
 
@@ -58,8 +88,18 @@ class GastoRepository:
         db = SessionLocal()
         try:
             total = GastoDAO.suma_total(db, usuario_id, dias)
-            print(f"[REPOSITORY] 💰 Total: S/. {total:.2f}")
+            logger.info(f"💰 Total: S/. {total:.2f}")
             return total
+        except Exception as e:
+            ExceptionHandler.manejar_error(
+                excepcion=e,
+                contexto="Calculando total de gastos",
+                datos_adicionales={
+                    'Usuario ID': usuario_id,
+                    'Rango días': dias
+                }
+            )
+            raise
         finally:
             db.close()
 
@@ -69,8 +109,18 @@ class GastoRepository:
         db = SessionLocal()
         try:
             categorias = GastoDAO.agrupar_por_categoria(db, usuario_id, dias)
-            print(f"[REPOSITORY] 📈 Se encontraron {len(categorias)} categorías")
+            logger.info(f"📈 Se encontraron {len(categorias)} categorías")
             return categorias
+        except Exception as e:
+            ExceptionHandler.manejar_error(
+                excepcion=e,
+                contexto="Obteniendo gastos por categoría",
+                datos_adicionales={
+                    'Usuario ID': usuario_id,
+                    'Rango días': dias
+                }
+            )
+            raise
         finally:
             db.close()
 
@@ -82,11 +132,19 @@ class GastoRepository:
             gasto = GastoDAO.obtener_por_id(db, gasto_id)
             if gasto and gasto.usuario_id == usuario_id:
                 gasto = GastoDAO.actualizar(db, gasto_id, **kwargs)
-                print(f"[REPOSITORY] ✅ Gasto {gasto_id} actualizado")
+                logger.info(f"✅ Gasto {gasto_id} actualizado")
                 return gasto
             return None
         except Exception as e:
-            print(f"[REPOSITORY] ❌ Error actualizando: {e}")
+            ExceptionHandler.manejar_error(
+                excepcion=e,
+                contexto="Actualizando gasto",
+                datos_adicionales={
+                    'Gasto ID': gasto_id,
+                    'Usuario ID': usuario_id,
+                    'Campos': str(list(kwargs.keys()))
+                }
+            )
             db.rollback()
             raise
         finally:
@@ -100,11 +158,18 @@ class GastoRepository:
             gasto = GastoDAO.obtener_por_id(db, gasto_id)
             if gasto and gasto.usuario_id == usuario_id:
                 resultado = GastoDAO.eliminar(db, gasto_id)
-                print(f"[REPOSITORY] ✅ Gasto eliminado")
+                logger.info(f"✅ Gasto eliminado")
                 return resultado
             return False
         except Exception as e:
-            print(f"[REPOSITORY] ❌ Error eliminando: {e}")
+            ExceptionHandler.manejar_error(
+                excepcion=e,
+                contexto="Eliminando gasto",
+                datos_adicionales={
+                    'Gasto ID': gasto_id,
+                    'Usuario ID': usuario_id
+                }
+            )
             db.rollback()
             raise
         finally:
@@ -121,7 +186,7 @@ class GastoRepository:
             promedio = total / cantidad if cantidad > 0 else 0
             categorias = GastoDAO.agrupar_por_categoria(db, usuario_id, dias)
 
-            print(f"[REPOSITORY] 📊 Estadísticas generadas")
+            logger.info(f"📊 Estadísticas generadas")
 
             return {
                 'total': total,
@@ -136,6 +201,16 @@ class GastoRepository:
                     for cat in categorias
                 ]
             }
+        except Exception as e:
+            ExceptionHandler.manejar_error(
+                excepcion=e,
+                contexto="Obteniendo estadísticas",
+                datos_adicionales={
+                    'Usuario ID': usuario_id,
+                    'Rango días': dias
+                }
+            )
+            raise
         finally:
             db.close()
 

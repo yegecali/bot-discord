@@ -11,27 +11,19 @@ from typing import Optional, List, Dict, Tuple
 import discord
 
 # ================================================================
-# CONFIGURACIÓN DE LOGGING
+# CONFIGURACIÓN DE LOGGING CENTRALIZADO
 # ================================================================
 
-def get_logger(module_name: str):
-    """
-    Obtiene un logger configurado para un módulo
+import logging.handlers
+from datetime import datetime
+from src.config.logging_config import LoggerConfig
+from src.config.exception_handler import ExceptionHandler
 
-    Args:
-        module_name (str): Nombre del módulo
+# Usar la configuración centralizada
+setup_logging = LoggerConfig.initialize
+get_logger = LoggerConfig.get_logger
 
-    Returns:
-        logging.Logger: Logger configurado
-    """
-    logger = logging.getLogger(module_name)
-    if not logger.handlers:
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(f'[{module_name}] %(levelname)s: %(message)s')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger.setLevel(logging.INFO)
-    return logger
+logger = get_logger(__name__)
 
 
 # ================================================================
@@ -39,38 +31,35 @@ def get_logger(module_name: str):
 # ================================================================
 
 def crear_archivo_temporal(contenido: bytes, sufijo: str = '.tmp') -> str:
-    """
-    Crea un archivo temporal con contenido
-
-    Args:
-        contenido (bytes): Contenido del archivo
-        sufijo (str): Sufijo del archivo temporal
-
-    Returns:
-        str: Ruta del archivo temporal
-    """
-    with tempfile.NamedTemporaryFile(delete=False, suffix=sufijo) as tmp:
-        tmp.write(contenido)
-        return tmp.name
+    """Crea un archivo temporal con contenido"""
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=sufijo) as tmp:
+            tmp.write(contenido)
+            logger.debug(f"📄 Archivo temporal creado: {tmp.name}")
+            return tmp.name
+    except Exception as e:
+        ExceptionHandler.manejar_error(
+            excepcion=e,
+            contexto="Creando archivo temporal",
+            datos_adicionales={'Sufijo': sufijo, 'Tamaño': len(contenido)}
+        )
+        raise
 
 
 def limpiar_archivo_temporal(ruta: str) -> bool:
-    """
-    Elimina un archivo temporal si existe
-
-    Args:
-        ruta (str): Ruta del archivo
-
-    Returns:
-        bool: True si se eliminó, False si no existe o hay error
-    """
+    """Elimina un archivo temporal si existe"""
     try:
         if os.path.exists(ruta):
             os.remove(ruta)
+            logger.debug(f"🗑️ Archivo temporal eliminado: {ruta}")
             return True
         return False
     except Exception as e:
-        logging.error(f"Error limpiando archivo temporal {ruta}: {e}")
+        ExceptionHandler.manejar_error(
+            excepcion=e,
+            contexto="Limpiando archivo temporal",
+            datos_adicionales={'Ruta': ruta}
+        )
         return False
 
 
