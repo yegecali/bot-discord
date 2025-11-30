@@ -1,0 +1,14 @@
+## Gastos Recientes
+
+**Últimos {{ dias }} días**
+Total de registros: {{ gastos|length }}
+
+{% for gasto in gastos[:10] %}
+**{{ gasto.categoria }}** - {{ gasto.fecha }}
+{{ simbolo_moneda }} {{ "%.2f"|format(gasto.monto) }} - {{ gasto.descripcion }}
+{% endfor %}
+
+{% if gastos|length > 10 %}
+... y {{ gastos|length - 10 }} más gastos
+{% endif %}
+

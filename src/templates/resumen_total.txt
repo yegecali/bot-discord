@@ -1,0 +1,9 @@
+## Resumen de Gastos
+
+**Período:** Últimos {{ dias }} días
+
+{{ simbolo_moneda }} **{{ "%.2f"|format(total) }}** - Total
+
+📈 **{{ cantidad }}** transacciones
+📊 **{{ "%.2f"|format(promedio) }}** promedio por transacción
+

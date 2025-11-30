@@ -1,0 +1,12 @@
+## Gastos por Categoría
+
+**Período:** Últimos {{ dias }} días
+
+{% for categoria, total, cantidad in categorias %}
+**{{ categoria }}**
+{{ simbolo_moneda }} {{ "%.2f"|format(total) }} ({{ cantidad }} compras)
+
+{% endfor %}
+
+**Total General:** {{ simbolo_moneda }} {{ "%.2f"|format(total_general) }}
+
