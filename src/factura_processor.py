@@ -4,13 +4,13 @@ Extrae información de facturas: monto, fecha, vendedor, categoría
 """
 import os
 import aiohttp
-import tempfile
 import re
 from pathlib import Path
 from PIL import Image
 import pytesseract
 
 from src.config import TESSERACT_CMD, OCR_IDIOMAS, SIMBOLO_MONEDA, ocr_config
+from src.utils import extraer_numero, limpiar_archivo_temporal, crear_archivo_temporal
 
 # Configurar Tesseract si fue encontrado
 if TESSERACT_CMD:
@@ -105,12 +105,7 @@ async def procesar_factura(ruta_imagen):
         return {'error': f'Error: {str(e)}'}
     finally:
         # Limpiar archivo temporal
-        try:
-            if os.path.exists(ruta_imagen):
-                os.remove(ruta_imagen)
-                print(f"[FACTURA] ✅ Archivo temporal limpiado")
-        except Exception as e:
-            print(f"[FACTURA] ⚠️ Error limpiando: {e}")
+        limpiar_archivo_temporal(ruta_imagen)
 
 def _extraer_informacion(texto):
     """
@@ -238,15 +233,8 @@ def _extraer_monto(lineas, texto_completo):
 
 
 def _extraer_numero(linea):
-    """Extrae el primer número decimal encontrado en una línea"""
-    numeros = re.findall(r'(\d+[.,]\d{2}|\d+)', linea)
-    if numeros:
-        try:
-            monto_str = numeros[-1].replace(',', '.')
-            return float(monto_str)
-        except ValueError:
-            pass
-    return None
+    """Extrae el primer número decimal encontrado en una línea - DEPRECATED: usar utils.extraer_numero"""
+    return extraer_numero(linea)
 
 
 def _detectar_moneda(texto):
